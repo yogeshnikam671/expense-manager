@@ -1,5 +1,5 @@
+import { initializeDatabase } from "@/storage/database";
 import { Stack } from "expo-router";
-import { initializeDatabase } from "./storage/database";
 
 initializeDatabase();
 

@@ -1,5 +1,5 @@
+import ExpenseForm from "@/components/ExpenseForm";
 import { SafeAreaView } from "react-native-safe-area-context";
-import ExpenseForm from "./components/ExpenseForm";
 
 export default function Index() {
   return (
