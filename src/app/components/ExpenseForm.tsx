@@ -4,6 +4,7 @@ import {
   ExpenseNature,
 } from "@/models/expense";
 import * as Crypto from "expo-crypto";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useState } from "react";
 import {
   Button,
@@ -26,7 +27,7 @@ export default function ExpenseForm() {
 
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
-  const [date] = useState(new Date());
+  const [date, setDate] = useState(new Date());
 
   const saveExpense = () => {
     const expense: Expense = {
@@ -44,7 +45,6 @@ export default function ExpenseForm() {
   return (
     <View style={{ padding: 24, gap: 16 }}>
       <Text>Nature</Text>
-
       <View style={{ flexDirection: "row", gap: 8 }}>
         {Object.values(ExpenseNature).map((value) => (
           <Pressable
@@ -64,6 +64,7 @@ export default function ExpenseForm() {
         ))}
       </View>
 
+
       <SelectField
         label="Category"
         value={category}
@@ -72,7 +73,6 @@ export default function ExpenseForm() {
       />
 
       <Text>Amount</Text>
-
       <TextInput
         value={amount}
         onChangeText={setAmount}
@@ -85,8 +85,19 @@ export default function ExpenseForm() {
         }}
       />
 
-      <Text>Description</Text>
 
+      <Text>Date</Text>
+      <DateTimePicker
+        value={date}
+        mode="date"
+        maximumDate={new Date()}
+        onValueChange={(_, selectedDate) => {
+          if (selectedDate) setDate(selectedDate);
+        }}
+      />
+
+
+      <Text>Description</Text>
       <TextInput
         value={description}
         onChangeText={setDescription}
