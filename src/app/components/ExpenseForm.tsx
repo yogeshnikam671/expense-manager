@@ -15,6 +15,9 @@ import {
 } from "react-native";
 
 import SelectField from "./SelectField";
+import { SQLiteExpenseRepository } from "../repositories/SQLiteExpenseRepository";
+
+const expenseRepository = new SQLiteExpenseRepository();
 
 export default function ExpenseForm() {
   const [nature, setNature] = useState<ExpenseNature>(
@@ -29,7 +32,7 @@ export default function ExpenseForm() {
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(new Date());
 
-  const saveExpense = () => {
+  const saveExpense = async () => {
     const expense: Expense = {
       id: Crypto.randomUUID(),
       nature,
@@ -39,7 +42,7 @@ export default function ExpenseForm() {
       date,
     };
 
-    console.log(expense);
+    await expenseRepository.save(expense);
   };
 
   return (
