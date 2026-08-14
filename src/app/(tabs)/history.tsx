@@ -1,10 +1,10 @@
-import ExpenseForm from "@/components/ExpenseForm";
+import HistoryScreen from "@/components/HistoryScreen";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function History() {
+export default function Index() {
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <ExpenseForm />
+      <HistoryScreen/>
     </SafeAreaView>
   );
 }

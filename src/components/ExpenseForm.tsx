@@ -7,6 +7,7 @@ import * as Crypto from "expo-crypto";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useState } from "react";
 import {
+    Alert,
   Button,
   Pressable,
   Text,
@@ -43,6 +44,10 @@ export default function ExpenseForm() {
     };
 
     await expenseRepository.save(expense);
+
+    Alert.alert("Saved", "Expense saved!")
+    setAmount("");
+    setDescription("");
   };
 
   return (
