@@ -1,8 +1,17 @@
 import { Tabs } from "expo-router";
 
+import { colors } from "../../theme";
+
 export default function TabLayout() {
   return (
-    <Tabs>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.muted,
+        tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.border },
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{ title: "Add" }}

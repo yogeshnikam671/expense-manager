@@ -19,7 +19,7 @@ export default function SelectField<T extends string>({
   const [open, setOpen] = useState(false);
 
   return (
-    <>
+    <View style={styles.fieldGroup}>
       <Text style={commonStyles.label}>{label}</Text>
 
       <Pressable
@@ -36,8 +36,8 @@ export default function SelectField<T extends string>({
         animationType="fade"
         onRequestClose={() => setOpen(false)}
       >
-        <View style={styles.backdrop}>
-          <View style={styles.modalCard}>
+        <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
+          <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
             <Text style={styles.modalTitle}>{label}</Text>
 
             {options.map((option) => (
@@ -59,10 +59,10 @@ export default function SelectField<T extends string>({
                 </Text>
               </Pressable>
             ))}
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
-    </>
+    </View>
   );
 }
 
@@ -70,6 +70,9 @@ const styles = StyleSheet.create({
   select: {
     alignItems: "center",
     flexDirection: "row",
+  },
+  fieldGroup: {
+    gap: spacing.sm,
   },
   value: {
     color: colors.text,

@@ -1,6 +1,5 @@
 import { Expense, ExpenseCategory, ExpenseNature } from "@/models/expense";
 import * as Crypto from "expo-crypto";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { useState } from "react";
 import {
   Alert,
@@ -15,6 +14,7 @@ import {
 
 import { SQLiteExpenseRepository } from "../repositories/SQLiteExpenseRepository";
 import { colors, commonStyles, formatDate, spacing } from "../theme";
+import DatePickerModal from "./DatePickerModal";
 import SelectField from "./SelectField";
 
 const expenseRepository = new SQLiteExpenseRepository();
@@ -72,27 +72,29 @@ export default function ExpenseForm() {
           Track spending while it is still fresh.
         </Text>
 
-        <Text style={commonStyles.label}>Nature</Text>
-        <View style={styles.segmentedControl}>
-          {Object.values(ExpenseNature).map((value) => (
-            <Pressable
-              key={value}
-              onPress={() => setNature(value)}
-              style={[
-                styles.segment,
-                nature === value && styles.segmentSelected,
-              ]}
-            >
-              <Text
+        <View style={styles.fieldGroup}>
+          <Text style={commonStyles.label}>Nature</Text>
+          <View style={styles.segmentedControl}>
+            {Object.values(ExpenseNature).map((value) => (
+              <Pressable
+                key={value}
+                onPress={() => setNature(value)}
                 style={[
-                  styles.segmentText,
-                  nature === value && styles.segmentTextSelected,
+                  styles.segment,
+                  nature === value && styles.segmentSelected,
                 ]}
               >
-                {value}
-              </Text>
-            </Pressable>
-          ))}
+                <Text
+                  style={[
+                    styles.segmentText,
+                    nature === value && styles.segmentTextSelected,
+                  ]}
+                >
+                  {value}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
 
         <SelectField
@@ -102,53 +104,47 @@ export default function ExpenseForm() {
           onChange={setCategory}
         />
 
-        <Text style={commonStyles.label}>Amount</Text>
-        <View style={styles.amountField}>
-          <Text style={styles.currency}>₹</Text>
-          <TextInput
-            value={amount}
-            onChangeText={(value) => {
-              setAmount(value);
-              setError("");
-            }}
-            keyboardType="decimal-pad"
-            placeholder="500"
-            placeholderTextColor={colors.muted}
-            style={styles.amountInput}
-          />
+        <View style={styles.fieldGroup}>
+          <Text style={commonStyles.label}>Amount</Text>
+          <View style={styles.amountField}>
+            <Text style={styles.currency}>₹</Text>
+            <TextInput
+              value={amount}
+              onChangeText={(value) => {
+                setAmount(value);
+                setError("");
+              }}
+              keyboardType="decimal-pad"
+              placeholder="500"
+              placeholderTextColor={colors.muted}
+              style={styles.amountInput}
+            />
+          </View>
         </View>
 
-        <Text style={commonStyles.label}>Date</Text>
-        <Pressable
-          style={commonStyles.input}
-          onPress={() => setShowDatePicker(true)}
-        >
-          <Text style={styles.fieldValue}>{formatDate(date)}</Text>
-        </Pressable>
+        <View style={styles.fieldGroup}>
+          <Text style={commonStyles.label}>Date</Text>
+          <Pressable
+            style={commonStyles.input}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Text style={styles.fieldValue}>{formatDate(date)}</Text>
+          </Pressable>
+        </View>
 
-        {showDatePicker && (
-          <DateTimePicker
-            value={date}
-            mode="date"
-            maximumDate={new Date()}
-            onValueChange={(_, selectedDate) => {
-              setShowDatePicker(false);
-              if (selectedDate) setDate(selectedDate);
-            }}
+        <View style={styles.fieldGroup}>
+          <Text style={commonStyles.label}>
+            Description <Text style={styles.optional}>(optional)</Text>
+          </Text>
+          <TextInput
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Lunch with friends"
+            placeholderTextColor={colors.muted}
+            multiline
+            style={[commonStyles.input, styles.description]}
           />
-        )}
-
-        <Text style={commonStyles.label}>
-          Description <Text style={styles.optional}>(optional)</Text>
-        </Text>
-        <TextInput
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Lunch with friends"
-          placeholderTextColor={colors.muted}
-          multiline
-          style={[commonStyles.input, styles.description]}
-        />
+        </View>
 
         {!!error && <Text style={styles.error}>{error}</Text>}
 
@@ -161,6 +157,13 @@ export default function ExpenseForm() {
             {saving ? "Saving…" : "Save expense"}
           </Text>
         </Pressable>
+        <DatePickerModal
+          value={date}
+          maximumDate={new Date()}
+          visible={showDatePicker}
+          onChange={setDate}
+          onClose={() => setShowDatePicker(false)}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -170,6 +173,9 @@ const styles = StyleSheet.create({
   segmentedControl: {
     flexDirection: "row",
     flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  fieldGroup: {
     gap: spacing.sm,
   },
   segment: {

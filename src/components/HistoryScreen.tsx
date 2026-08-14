@@ -1,7 +1,6 @@
 import { Expense, ExpenseNature } from "@/models/expense";
 import { SQLiteExpenseRepository } from "@/repositories/SQLiteExpenseRepository";
 import { getCategoryBreakdown, getTotalSpend } from "@/utils/expenseAnalytics";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -20,6 +19,7 @@ import {
   formatDate,
   spacing,
 } from "../theme";
+import DatePickerModal from "./DatePickerModal";
 
 const repository = new SQLiteExpenseRepository();
 
@@ -89,31 +89,6 @@ export default function HistoryScreen() {
           </Pressable>
         </View>
       </View>
-
-      {picker === "from" && (
-        <DateTimePicker
-          value={fromDate}
-          mode="date"
-          maximumDate={toDate}
-          onValueChange={(_, date) => {
-            setPicker(null);
-            if (date) setFromDate(date);
-          }}
-        />
-      )}
-
-      {picker === "to" && (
-        <DateTimePicker
-          value={toDate}
-          mode="date"
-          minimumDate={fromDate}
-          maximumDate={new Date()}
-          onValueChange={(_, date) => {
-            setPicker(null);
-            if (date) setToDate(date);
-          }}
-        />
-      )}
 
       <View style={styles.summaryCard}>
         <Text style={styles.summaryLabel}>Total spend</Text>
@@ -199,6 +174,17 @@ export default function HistoryScreen() {
           </Pressable>
         ))
       )}
+      <DatePickerModal
+        value={picker === "from" ? fromDate : toDate}
+        minimumDate={picker === "to" ? fromDate : undefined}
+        maximumDate={picker === "from" ? toDate : new Date()}
+        visible={picker !== null}
+        onChange={(date) => {
+          if (picker === "from") setFromDate(date);
+          if (picker === "to") setToDate(date);
+        }}
+        onClose={() => setPicker(null)}
+      />
     </ScrollView>
   );
 }
