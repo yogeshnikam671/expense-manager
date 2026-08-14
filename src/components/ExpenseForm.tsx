@@ -128,7 +128,7 @@ export default function ExpenseForm() {
             style={commonStyles.input}
             onPress={() => setShowDatePicker(true)}
           >
-            <Text style={styles.fieldValue}>{formatDate(date)}</Text>
+            <Text style={styles.dateFieldValue}>{formatDate(date)}</Text>
           </Pressable>
         </View>
 
@@ -221,9 +221,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     paddingHorizontal: 8,
   },
-  fieldValue: {
+  dateFieldValue: {
     color: colors.text,
     fontSize: 16,
+    marginTop: 14
   },
   optional: {
     color: colors.muted,
