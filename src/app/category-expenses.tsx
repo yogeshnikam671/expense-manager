@@ -77,7 +77,7 @@ export default function CategoryExpensesScreen() {
             </View>
 
             <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Category total</Text>
+              <Text style={styles.summaryLabel}>Total Expense</Text>
               <Text style={styles.summaryValue}>
                 {formatCurrency(Number(total))}
               </Text>
@@ -126,6 +126,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     borderRadius: 16,
     padding: spacing.lg,
+    marginVertical: 20
   },
   summaryLabel: {
     color: "#DDE2FF",
