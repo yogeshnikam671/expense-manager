@@ -14,12 +14,14 @@ import {
 
 import { useExpenses } from "@/contexts/ExpenseContext";
 import { colors, commonStyles, formatDate, spacing } from "../theme";
+import { parseExpenseLabels } from "../utils/expenseLabels";
 import DatePickerModal from "./DatePickerModal";
 import SelectField from "./SelectField";
 
 export default function ExpenseForm() {
   const [nature, setNature] = useState(ExpenseNature.Essential);
   const [category, setCategory] = useState(ExpenseCategory.Other);
+  const [labels, setLabels] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(new Date());
@@ -39,12 +41,22 @@ export default function ExpenseForm() {
 
     setError("");
     setSaving(true);
-    
+
+    let parsedLabels: string[];
+    try {
+      parsedLabels = parseExpenseLabels(labels);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Enter valid labels.");
+      setSaving(false);
+      return;
+    }
+
     const now = new Date();
     const expense: Expense = {
       id: Crypto.randomUUID(),
       nature,
       category,
+      labels: parsedLabels,
       amount: parsedAmount,
       description: description.trim(),
       date,
@@ -58,6 +70,7 @@ export default function ExpenseForm() {
       Alert.alert("Saved", "Expense saved!");
       setAmount("");
       setDescription("");
+      setLabels("");
     } catch {
       setError("Could not save expense. Try again.");
     } finally {
@@ -134,6 +147,22 @@ export default function ExpenseForm() {
           >
             <Text style={styles.dateFieldValue}>{formatDate(date)}</Text>
           </Pressable>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={commonStyles.label}>
+            Labels <Text style={styles.optional}>(optional, letters only)</Text>
+          </Text>
+          <TextInput
+            value={labels}
+            onChangeText={(value) => {
+              setLabels(value);
+              setError("");
+            }}
+            placeholder="client, reimbursable"
+            placeholderTextColor={colors.muted}
+            style={commonStyles.input}
+          />
         </View>
 
         <View style={styles.fieldGroup}>

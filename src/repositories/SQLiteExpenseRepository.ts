@@ -1,12 +1,14 @@
 import { Expense, ExpenseCategory, ExpenseNature, SyncStatus } from "@/models/expense";
 import { ExpenseRepository } from "./ExpenseRepository";
 import { db } from "../storage/database";
+import { labelsFromDatabase } from "../utils/expenseLabels";
 
 type ExpenseRow = {
   id: string;
   amount: number;
   nature: string;
   category: string;
+  labels: string | null;
   description: string | null;
   date: string;
   createdAt: string;
@@ -21,6 +23,7 @@ function expenseFrom(row: ExpenseRow) {
     amount: row.amount,
     nature: row.nature as ExpenseNature,
     category: row.category as ExpenseCategory,
+    labels: labelsFromDatabase(row.labels),
     description: row.description ?? undefined,
     date: new Date(row.date),
     createdAt: new Date(row.createdAt),
@@ -39,6 +42,7 @@ export class SQLiteExpenseRepository implements ExpenseRepository {
           amount,
           nature,
           category,
+          labels,
           description,
           date,
           createdAt,
@@ -46,12 +50,13 @@ export class SQLiteExpenseRepository implements ExpenseRepository {
           deletedAt,
           syncStatus
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
       expense.id,
       expense.amount,
       expense.nature,
       expense.category,
+      JSON.stringify(expense.labels),
       expense.description ?? null,
       expense.date.toISOString(),
       expense.createdAt.toISOString(),

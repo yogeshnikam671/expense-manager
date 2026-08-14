@@ -29,6 +29,7 @@ export type Expense = {
   amount: number;
   nature: ExpenseNature;
   category: ExpenseCategory;
+  labels: string[];
   description?: string;
   date: Date;
 

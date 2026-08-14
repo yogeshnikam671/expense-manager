@@ -105,6 +105,15 @@ export default function CategoryExpensesScreen() {
             {item.description ? (
               <Text style={styles.description}>{item.description}</Text>
             ) : null}
+            {item.labels.length > 0 ? (
+              <View style={styles.labels}>
+                {item.labels.map((label) => (
+                  <View key={label} style={styles.labelChip}>
+                    <Text style={styles.labelText}>{label}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
           </View>
         )}
       />
@@ -156,6 +165,23 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 15,
     marginTop: spacing.sm,
+  },
+  labels: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  labelChip: {
+    backgroundColor: colors.primarySoft,
+    borderRadius: 999,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
+  labelText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: "700",
   },
   muted: {
     color: colors.muted,
