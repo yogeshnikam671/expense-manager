@@ -1,5 +1,7 @@
-import { Modal, Pressable, Text, View } from "react-native";
 import { useState } from "react";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+
+import { colors, commonStyles, spacing } from "../theme";
 
 type SelectFieldProps<T extends string> = {
   label: string;
@@ -18,17 +20,14 @@ export default function SelectField<T extends string>({
 
   return (
     <>
-      <Text>{label}</Text>
+      <Text style={commonStyles.label}>{label}</Text>
 
       <Pressable
         onPress={() => setOpen(true)}
-        style={{
-          borderWidth: 1,
-          borderRadius: 8,
-          padding: 14,
-        }}
+        style={[commonStyles.input, styles.select]}
       >
-        <Text>{value} ▾</Text>
+        <Text style={styles.value}>{value}</Text>
+        <Text style={styles.chevron}>⌄</Text>
       </Pressable>
 
       <Modal
@@ -37,23 +36,10 @@ export default function SelectField<T extends string>({
         animationType="fade"
         onRequestClose={() => setOpen(false)}
       >
-        <Pressable
-          onPress={() => setOpen(false)}
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.35)",
-            justifyContent: "center",
-            padding: 24,
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: "white",
-              borderRadius: 12,
-              padding: 16,
-              gap: 8,
-            }}
-          >
+        <View style={styles.backdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>{label}</Text>
+
             {options.map((option) => (
               <Pressable
                 key={option}
@@ -61,18 +47,70 @@ export default function SelectField<T extends string>({
                   onChange(option);
                   setOpen(false);
                 }}
-                style={{
-                  padding: 14,
-                  borderRadius: 8,
-                  backgroundColor: option === value ? "#eee" : "white",
-                }}
+                style={[styles.option, option === value && styles.selectedOption]}
               >
-                <Text>{option}</Text>
+                <Text
+                  style={[
+                    styles.optionText,
+                    option === value && styles.selectedOptionText,
+                  ]}
+                >
+                  {option}
+                </Text>
               </Pressable>
             ))}
           </View>
-        </Pressable>
+        </View>
       </Modal>
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  select: {
+    alignItems: "center",
+    flexDirection: "row",
+  },
+  value: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 16,
+  },
+  chevron: {
+    color: colors.muted,
+    fontSize: 20,
+  },
+  backdrop: {
+    backgroundColor: "rgba(15, 23, 42, 0.45)",
+    flex: 1,
+    justifyContent: "center",
+    padding: spacing.lg,
+  },
+  modalCard: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  modalTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "800",
+    marginBottom: spacing.sm,
+  },
+  option: {
+    borderRadius: 10,
+    padding: 14,
+  },
+  selectedOption: {
+    backgroundColor: colors.primarySoft,
+  },
+  optionText: {
+    color: colors.text,
+    fontSize: 16,
+  },
+  selectedOptionText: {
+    color: colors.primary,
+    fontWeight: "700",
+  },
+});

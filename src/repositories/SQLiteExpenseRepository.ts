@@ -54,16 +54,20 @@ export class SQLiteExpenseRepository implements ExpenseRepository {
   }
 
   async getBetween(from: Date, to: Date): Promise<Expense[]> {
+    const start = new Date(from);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(to);
+    end.setHours(23, 59, 59, 999);
     const rows = db.getAllSync<ExpenseRow>(
       `
         SELECT * FROM expenses
         WHERE date >= ? AND date <= ?
         ORDER BY date DESC
        `,
-      from.toISOString(),
-      to.toISOString()
+      start.toISOString(),
+      end.toISOString()
     );
-    
+
     return rows.map((row) => expenseFrom(row));
   }
 
