@@ -3,7 +3,7 @@ import { SQLiteExpenseRepository } from "@/repositories/SQLiteExpenseRepository"
 import { getTotalSpend } from "@/utils/expenseAnalytics";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -19,7 +19,7 @@ export default function HistoryScreen() {
   const [toDate, setToDate] = useState(new Date());
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [selectedNature] = useState<ExpenseNature>(
+  const [selectedNature, setSelectedNature] = useState<ExpenseNature>(
     ExpenseNature.Essential
   );
 
@@ -35,6 +35,10 @@ export default function HistoryScreen() {
   );
 
   const totalSpend = getTotalSpend(expenses);
+  
+  const expensesForSelectedNature = expenses.filter(
+    (expense) => expense.nature === selectedNature
+  );
   
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -68,12 +72,27 @@ export default function HistoryScreen() {
           ₹{totalSpend}
         </Text>
 
-        <Text>
-          Selected nature: {selectedNature}
-        </Text>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          {Object.values(ExpenseNature).map((nature) => (
+            <Pressable
+              key={nature}
+              onPress={() => setSelectedNature(nature)}
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                alignItems: "center",
+                borderWidth: 1,
+                borderRadius: 8,
+                backgroundColor: selectedNature === nature ? "#ddd" : "white",
+              }}
+            >
+              <Text>{nature}</Text>
+            </Pressable>
+          ))}
+        </View>
 
         <Text>
-          Expenses found: {expenses.length}
+          {selectedNature} expenses: {expensesForSelectedNature.length}
         </Text>
       </View>
     </SafeAreaView>
