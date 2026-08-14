@@ -1,18 +1,19 @@
 export enum ExpenseNature {
   Essential = "Essential",
-  Emergency = "Emergency",
   Discretionary = "Discretionary",
+  Emergency = "Emergency",
 }
 
 export enum ExpenseCategory {
-  Housing = "Housing",
+  Bills = "Bills",
   Food = "Food",
-  Transport = "Transport",
-  Healthcare = "Healthcare",
+  Shopping = "Shopping",
+  Investment = "Investment",
   Utilities = "Utilities",
   Entertainment = "Entertainment",
-  Shopping = "Shopping",
+  Healthcare = "Healthcare",
   Travel = "Travel",
+  Housing = "Housing",
   Other = "Other",
 }
 
