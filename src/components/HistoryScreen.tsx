@@ -5,6 +5,7 @@ import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 const repository = new SQLiteExpenseRepository();
 
@@ -14,8 +15,8 @@ function startOfMonth() {
 }
 
 export default function HistoryScreen() {
-  const [fromDate] = useState(startOfMonth());
-  const [toDate] = useState(new Date());
+  const [fromDate, setFromDate] = useState(startOfMonth());
+  const [toDate, setToDate] = useState(new Date());
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [selectedNature] = useState<ExpenseNature>(
@@ -34,7 +35,7 @@ export default function HistoryScreen() {
   );
 
   const totalSpend = getTotalSpend(expenses);
-
+  
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <View style={{ flex: 1, padding: 24, gap: 16 }}>
@@ -42,13 +43,26 @@ export default function HistoryScreen() {
           History
         </Text>
 
-        <Text>
-          From: {fromDate.toLocaleDateString()}
-        </Text>
+        <Text>From</Text>
+        <DateTimePicker
+          value={fromDate}
+          mode="date"
+          maximumDate={toDate}
+          onValueChange={(_, selectedDate) => {
+            if (selectedDate) setFromDate(selectedDate);
+          }}
+        />
 
-        <Text>
-          To: {toDate.toLocaleDateString()}
-        </Text>
+        <Text>To</Text>
+        <DateTimePicker
+          value={toDate}
+          mode="date"
+          minimumDate={fromDate}
+          maximumDate={new Date()}
+          onValueChange={(_, selectedDate) => {
+            if (selectedDate) setToDate(selectedDate);
+          }}
+        />
 
         <Text style={{ fontSize: 24, fontWeight: "700" }}>
           ₹{totalSpend}
