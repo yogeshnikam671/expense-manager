@@ -1,4 +1,4 @@
-import { Expense, ExpenseCategory, ExpenseNature } from "@/models/expense";
+import { Expense, ExpenseCategory, ExpenseNature, SyncStatus } from "@/models/expense";
 import * as Crypto from "expo-crypto";
 import { useState } from "react";
 import {
@@ -12,12 +12,10 @@ import {
   View,
 } from "react-native";
 
-import { SQLiteExpenseRepository } from "../repositories/SQLiteExpenseRepository";
+import { useExpenses } from "@/contexts/ExpenseContext";
 import { colors, commonStyles, formatDate, spacing } from "../theme";
 import DatePickerModal from "./DatePickerModal";
 import SelectField from "./SelectField";
-
-const expenseRepository = new SQLiteExpenseRepository();
 
 export default function ExpenseForm() {
   const [nature, setNature] = useState(ExpenseNature.Essential);
@@ -29,7 +27,9 @@ export default function ExpenseForm() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  async function saveExpense() {
+  const { saveExpense } = useExpenses();
+
+  async function onSaveExpense() {
     const parsedAmount = Number(amount);
 
     if (!amount.trim() || !Number.isFinite(parsedAmount) || parsedAmount <= 0) {
@@ -39,7 +39,8 @@ export default function ExpenseForm() {
 
     setError("");
     setSaving(true);
-
+    
+    const now = new Date();
     const expense: Expense = {
       id: Crypto.randomUUID(),
       nature,
@@ -47,10 +48,13 @@ export default function ExpenseForm() {
       amount: parsedAmount,
       description: description.trim(),
       date,
+      createdAt: now,
+      updatedAt: now,
+      syncStatus: SyncStatus.PendingCreate,
     };
 
     try {
-      await expenseRepository.save(expense);
+      await saveExpense(expense);
       Alert.alert("Saved", "Expense saved!");
       setAmount("");
       setDescription("");
@@ -150,7 +154,7 @@ export default function ExpenseForm() {
 
         <Pressable
           disabled={saving}
-          onPress={saveExpense}
+          onPress={onSaveExpense}
           style={[styles.save, saving && styles.disabled]}
         >
           <Text style={styles.saveText}>

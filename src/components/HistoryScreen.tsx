@@ -1,5 +1,5 @@
-import { Expense, ExpenseNature } from "@/models/expense";
-import { SQLiteExpenseRepository } from "@/repositories/SQLiteExpenseRepository";
+import { ExpenseNature } from "@/models/expense";
+import { useExpenses } from "@/contexts/ExpenseContext";
 import { getCategoryBreakdown, getTotalSpend } from "@/utils/expenseAnalytics";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
@@ -21,8 +21,6 @@ import {
 } from "../theme";
 import DatePickerModal from "./DatePickerModal";
 
-const repository = new SQLiteExpenseRepository();
-
 function startOfMonth() {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -31,17 +29,18 @@ function startOfMonth() {
 export default function HistoryScreen() {
   const [fromDate, setFromDate] = useState(startOfMonth());
   const [toDate, setToDate] = useState(new Date());
-  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [selectedNature, setSelectedNature] = useState(ExpenseNature.Essential);
   const [picker, setPicker] = useState<"from" | "to" | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const { expenses, loadExpensesBetween } = useExpenses();
+
   const loadExpenses = useCallback(async () => {
     setLoading(true);
-
+    
     try {
-      setExpenses(await repository.getBetween(fromDate, toDate));
+      await loadExpensesBetween(fromDate, toDate);
       setError("");
     } catch {
       setError("Could not load history. Try again.");

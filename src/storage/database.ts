@@ -10,7 +10,11 @@ export function initializeDatabase() {
       nature TEXT NOT NULL,
       category TEXT NOT NULL,
       description TEXT,
-      date TEXT NOT NULL
+      date TEXT NOT NULL,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL,
+      deletedAt TEXT,
+      syncStatus TEXT NOT NULL
     );
   `);
 }

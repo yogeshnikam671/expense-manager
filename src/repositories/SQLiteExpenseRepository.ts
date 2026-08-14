@@ -1,4 +1,4 @@
-import { Expense, ExpenseCategory, ExpenseNature } from "@/models/expense";
+import { Expense, ExpenseCategory, ExpenseNature, SyncStatus } from "@/models/expense";
 import { ExpenseRepository } from "./ExpenseRepository";
 import { db } from "../storage/database";
 
@@ -9,6 +9,10 @@ type ExpenseRow = {
   category: string;
   description: string | null;
   date: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  syncStatus: string;
 };
 
 function expenseFrom(row: ExpenseRow) {
@@ -19,6 +23,10 @@ function expenseFrom(row: ExpenseRow) {
     category: row.category as ExpenseCategory,
     description: row.description ?? undefined,
     date: new Date(row.date),
+    createdAt: new Date(row.createdAt),
+    updatedAt: new Date(row.updatedAt),
+    deletedAt: row.deletedAt ? new Date(row.deletedAt) : undefined,
+    syncStatus: row.syncStatus as SyncStatus,
   }
 }
 
@@ -26,22 +34,30 @@ export class SQLiteExpenseRepository implements ExpenseRepository {
   async save(expense: Expense): Promise<void> {
     db.runSync(
       `
-      INSERT INTO expenses (
-        id,
-        amount,
-        nature,
-        category,
-        description,
-        date
-      )
-      VALUES (?, ?, ?, ?, ?, ?)
-      `,
+        INSERT INTO expenses (
+          id,
+          amount,
+          nature,
+          category,
+          description,
+          date,
+          createdAt,
+          updatedAt,
+          deletedAt,
+          syncStatus
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
       expense.id,
       expense.amount,
       expense.nature,
       expense.category,
       expense.description ?? null,
-      expense.date.toISOString()
+      expense.date.toISOString(),
+      expense.createdAt.toISOString(),
+      expense.updatedAt.toISOString(),
+      expense.deletedAt?.toISOString() ?? null,
+      expense.syncStatus
     );
   }
 

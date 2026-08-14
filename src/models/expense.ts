@@ -16,6 +16,13 @@ export enum ExpenseCategory {
   Other = "Other",
 }
 
+export enum SyncStatus {
+  Synced = "SYNCED",
+  PendingCreate = "PENDING_CREATE",
+  PendingUpdate = "PENDING_UPDATE",
+  PendingDelete = "PENDING_DELETE",
+}
+
 export type Expense = {
   id: string;
   amount: number;
@@ -23,4 +30,9 @@ export type Expense = {
   category: ExpenseCategory;
   description?: string;
   date: Date;
+
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date;
+  syncStatus: SyncStatus;
 };

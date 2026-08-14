@@ -1,5 +1,5 @@
 import { Expense } from "@/models/expense";
-import { SQLiteExpenseRepository } from "@/repositories/SQLiteExpenseRepository";
+import { useExpenses } from "@/contexts/ExpenseContext";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -19,8 +19,6 @@ import {
   spacing,
 } from "../theme";
 
-const repository = new SQLiteExpenseRepository();
-
 export default function CategoryExpensesScreen() {
   const { from, to, nature, category, total } = useLocalSearchParams<{
     from: string;
@@ -29,22 +27,22 @@ export default function CategoryExpensesScreen() {
     category: string;
     total: string;
   }>();
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [categoryExpenses, setCategoryExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const { loadExpensesBetween } = useExpenses();
 
   useEffect(() => {
     let active = true;
     setLoading(true);
 
-    repository
-      .getBetween(new Date(from), new Date(to))
-      .then((allExpenses) => {
+    loadExpensesBetween(new Date(from), new Date(to))
+      .then((loadedExpenses) => {
         if (active) {
-          setExpenses(
-            allExpenses.filter(
-              (expense) =>
-                expense.nature === nature && expense.category === category
+          setCategoryExpenses(
+            loadedExpenses.filter((expense) =>
+              expense.nature === nature && expense.category === category
             )
           );
         }
@@ -64,7 +62,7 @@ export default function CategoryExpensesScreen() {
   return (
     <SafeAreaView style={commonStyles.screen} edges={["bottom"]}>
       <FlatList
-        data={expenses}
+        data={categoryExpenses}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.content}
         ListHeaderComponent={
