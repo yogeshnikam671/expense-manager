@@ -1,10 +1,14 @@
+export function isExpenseLabel(value: unknown): value is string {
+  return typeof value === "string" && /^[a-z]+$/.test(value);
+}
+
 export function parseExpenseLabels(input: string): string[] {
   const labels: string[] = [];
 
   for (const rawLabel of input.split(",")) {
     const label = rawLabel.trim().toLowerCase();
     if (!label) continue;
-    if (!/^[a-z]+$/.test(label)) {
+    if (!isExpenseLabel(label)) {
       throw new Error("Labels can contain letters only.");
     }
     if (!labels.includes(label)) labels.push(label);

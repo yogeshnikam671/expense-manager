@@ -17,6 +17,9 @@ export enum ExpenseCategory {
   Other = "Other",
 }
 
+export const EXPENSE_NATURES = Object.values(ExpenseNature);
+export const EXPENSE_CATEGORIES = Object.values(ExpenseCategory);
+
 export enum SyncStatus {
   Synced = "SYNCED",
   PendingCreate = "PENDING_CREATE",
@@ -37,4 +40,28 @@ export type Expense = {
   updatedAt: Date;
   deletedAt?: Date;
   syncStatus: SyncStatus;
+};
+
+export type CategorySpendSummary = {
+  nature: ExpenseNature;
+  category: ExpenseCategory;
+  total: number;
+  count: number;
+};
+
+export type ExpenseHistorySummary = {
+  total: number;
+  count: number;
+  categories: CategorySpendSummary[];
+};
+
+export type ExpenseCursor = Pick<Expense, "date" | "id"> & {
+  revision: number;
+};
+
+export type ExpensePage = {
+  items: Expense[];
+  nextCursor?: ExpenseCursor;
+  total?: number;
+  reset?: boolean;
 };

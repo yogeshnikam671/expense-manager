@@ -8,6 +8,7 @@ const ACCESS_TOKEN_KEY = "dropbox.oauth.accessToken";
 const REFRESH_TOKEN_KEY = "dropbox.oauth.refreshToken";
 const EXPIRES_AT_KEY = "dropbox.oauth.expiresAt";
 const LEGACY_TOKEN_KEY = "dropbox.oauth.tokens";
+const DROPBOX_APP_KEY = process.env.EXPO_PUBLIC_DROPBOX_APP_KEY;
 export const DROPBOX_SYNC_FILE = "/expenses.json";
 const redirectUri = AuthSession.makeRedirectUri({ scheme: "expensemanager", path: "oauth" });
 const discovery: AuthSession.DiscoveryDocument = {
@@ -45,13 +46,12 @@ export async function dropboxResponseError(response: Response, fallback: string)
 }
 
 export function getDropboxAppKey(): string {
-  const appKey = process.env.EXPO_PUBLIC_DROPBOX_APP_KEY;
-  if (!appKey) throw new Error("Missing EXPO_PUBLIC_DROPBOX_APP_KEY");
-  return appKey;
+  if (!DROPBOX_APP_KEY) throw new Error("Missing EXPO_PUBLIC_DROPBOX_APP_KEY");
+  return DROPBOX_APP_KEY;
 }
 
 export function hasDropboxAppKey(): boolean {
-  return Boolean(process.env.EXPO_PUBLIC_DROPBOX_APP_KEY);
+  return Boolean(DROPBOX_APP_KEY);
 }
 
 export async function getDropboxTokens(): Promise<DropboxTokens | null> {
@@ -174,7 +174,7 @@ export async function disconnectDropbox(): Promise<void> {
 
 export function useDropboxAuthRequest() {
   return AuthSession.useAuthRequest({
-    clientId: process.env.EXPO_PUBLIC_DROPBOX_APP_KEY ?? "",
+    clientId: DROPBOX_APP_KEY ?? "",
     redirectUri,
     responseType: AuthSession.ResponseType.Code,
     scopes: ["account_info.read", "files.content.read", "files.content.write"],

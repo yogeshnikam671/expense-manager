@@ -1,4 +1,12 @@
-import { Expense, ExpenseCategory, ExpenseNature, SyncStatus } from "@/models/expense";
+import {
+  EXPENSE_CATEGORIES,
+  EXPENSE_NATURES,
+  Expense,
+  ExpenseCategory,
+  ExpenseNature,
+  SyncStatus,
+} from "@/models/expense";
+import { isExpenseLabel } from "@/utils/expenseLabels";
 
 export const CURRENT_SYNC_SCHEMA = 1;
 
@@ -61,12 +69,10 @@ function isCloudExpense(value: unknown): value is CloudExpense {
     typeof record.amount === "number" &&
     Number.isFinite(record.amount) &&
     record.amount > 0 &&
-    Object.values(ExpenseNature).includes(record.nature as ExpenseNature) &&
-    Object.values(ExpenseCategory).includes(record.category as ExpenseCategory) &&
+    EXPENSE_NATURES.includes(record.nature as ExpenseNature) &&
+    EXPENSE_CATEGORIES.includes(record.category as ExpenseCategory) &&
     Array.isArray(record.labels) &&
-    record.labels.every(
-      (label) => typeof label === "string" && /^[a-z]+$/.test(label)
-    ) &&
+    record.labels.every(isExpenseLabel) &&
     (record.description === null || typeof record.description === "string") &&
     isDate(record.date) &&
     isDate(record.createdAt) &&
@@ -102,18 +108,7 @@ export function parseSyncDocument(input: string): Expense[] {
 }
 
 function recordKey(expense: Expense): string {
-  return JSON.stringify({
-    id: expense.id,
-    amount: expense.amount,
-    nature: expense.nature,
-    category: expense.category,
-    labels: expense.labels,
-    description: expense.description ?? null,
-    date: expense.date.toISOString(),
-    createdAt: expense.createdAt.toISOString(),
-    updatedAt: expense.updatedAt.toISOString(),
-    deletedAt: expense.deletedAt?.toISOString() ?? null,
-  });
+  return JSON.stringify(cloudExpenseFrom(expense));
 }
 
 function newer(left: Expense, right: Expense): Expense {

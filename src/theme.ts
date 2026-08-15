@@ -48,6 +48,22 @@ export const commonStyles = StyleSheet.create({
     borderWidth: 1,
     padding: spacing.md,
   },
+  summaryCard: {
+    backgroundColor: colors.primary,
+    borderRadius: 16,
+    padding: spacing.lg,
+  },
+  summaryLabel: {
+    color: "#DDE2FF",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  summaryValue: {
+    color: "#FFFFFF",
+    fontSize: 32,
+    fontWeight: "800",
+    marginTop: 6,
+  },
   input: {
     backgroundColor: colors.card,
     borderColor: colors.border,

@@ -1,6 +1,5 @@
-import { ExpenseNature } from "@/models/expense";
-import { ExpenseHistorySummary } from "@/models/expenseSummary";
-import { useExpenses } from "@/contexts/ExpenseContext";
+import { ExpenseHistorySummary, ExpenseNature } from "@/models/expense";
+import { getHistorySummary } from "@/repositories/expenses";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -20,6 +19,7 @@ import {
   spacing,
 } from "../theme";
 import DatePickerModal from "./DatePickerModal";
+import NatureSelector from "./NatureSelector";
 
 function startOfMonth() {
   const now = new Date();
@@ -42,8 +42,6 @@ export default function HistoryScreen() {
   const [summary, setSummary] = useState(EMPTY_SUMMARY);
   const [reload, setReload] = useState(0);
 
-  const { getHistorySummary } = useExpenses();
-
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -65,7 +63,7 @@ export default function HistoryScreen() {
       return () => {
         active = false;
       };
-    }, [fromDate, toDate, getHistorySummary, reload])
+    }, [fromDate, toDate, reload])
   );
 
   const categoryBreakdown = summary.categories.filter(
@@ -105,9 +103,9 @@ export default function HistoryScreen() {
         </View>
       </View>
 
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryLabel}>Total spend</Text>
-        <Text style={styles.summaryValue}>
+      <View style={commonStyles.summaryCard}>
+        <Text style={commonStyles.summaryLabel}>Total spend</Text>
+        <Text style={commonStyles.summaryValue}>
           {formatCurrency(summary.total)}
         </Text>
         <Text style={styles.summaryMeta}>
@@ -115,28 +113,11 @@ export default function HistoryScreen() {
         </Text>
       </View>
 
-      <Text style={commonStyles.label}>View by nature</Text>
-      <View style={styles.segmentedControl}>
-        {Object.values(ExpenseNature).map((nature) => (
-          <Pressable
-            key={nature}
-            onPress={() => setSelectedNature(nature)}
-            style={[
-              styles.segment,
-              selectedNature === nature && styles.segmentSelected,
-            ]}
-          >
-            <Text
-              style={[
-                styles.segmentText,
-                selectedNature === nature && styles.segmentTextSelected,
-              ]}
-            >
-              {nature}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <NatureSelector
+        label="View by nature"
+        value={selectedNature}
+        onChange={setSelectedNature}
+      />
 
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Categories</Text>
@@ -239,52 +220,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginTop: 4,
   },
-  summaryCard: {
-    backgroundColor: colors.primary,
-    borderRadius: 16,
-    padding: spacing.lg,
-  },
-  summaryLabel: {
-    color: "#DDE2FF",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  summaryValue: {
-    color: "#FFFFFF",
-    fontSize: 32,
-    fontWeight: "800",
-    marginTop: 6,
-  },
   summaryMeta: {
     color: "#DDE2FF",
     marginTop: 4,
-  },
-  segmentedControl: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  segment: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    flexGrow: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 13,
-  },
-  segmentSelected: {
-    backgroundColor: colors.primarySoft,
-    borderColor: colors.primary,
-  },
-  segmentText: {
-    color: colors.muted,
-    fontSize: 13,
-    textAlign: "center",
-  },
-  segmentTextSelected: {
-    color: colors.primary,
-    fontWeight: "700",
   },
   sectionHeader: {
     alignItems: "baseline",

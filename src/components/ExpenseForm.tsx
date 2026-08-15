@@ -1,4 +1,10 @@
-import { Expense, ExpenseCategory, ExpenseNature, SyncStatus } from "@/models/expense";
+import {
+  EXPENSE_CATEGORIES,
+  Expense,
+  ExpenseCategory,
+  ExpenseNature,
+  SyncStatus,
+} from "@/models/expense";
 import * as Crypto from "expo-crypto";
 import { useState } from "react";
 import {
@@ -12,10 +18,11 @@ import {
   View,
 } from "react-native";
 
-import { useExpenses } from "@/contexts/ExpenseContext";
+import { saveExpense } from "@/repositories/expenses";
 import { colors, commonStyles, formatDate, spacing } from "../theme";
 import { parseExpenseLabels } from "../utils/expenseLabels";
 import DatePickerModal from "./DatePickerModal";
+import NatureSelector from "./NatureSelector";
 import SelectField from "./SelectField";
 
 export default function ExpenseForm() {
@@ -29,8 +36,6 @@ export default function ExpenseForm() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const { saveExpense } = useExpenses();
-
   async function onSaveExpense() {
     const parsedAmount = Number(amount);
 
@@ -39,17 +44,16 @@ export default function ExpenseForm() {
       return;
     }
 
-    setError("");
-    setSaving(true);
-
     let parsedLabels: string[];
     try {
       parsedLabels = parseExpenseLabels(labels);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Enter valid labels.");
-      setSaving(false);
       return;
     }
+
+    setError("");
+    setSaving(true);
 
     const now = new Date();
     const expense: Expense = {
@@ -89,35 +93,12 @@ export default function ExpenseForm() {
           Track spending while it is still fresh.
         </Text>
 
-        <View style={styles.fieldGroup}>
-          <Text style={commonStyles.label}>Nature</Text>
-          <View style={styles.segmentedControl}>
-            {Object.values(ExpenseNature).map((value) => (
-              <Pressable
-                key={value}
-                onPress={() => setNature(value)}
-                style={[
-                  styles.segment,
-                  nature === value && styles.segmentSelected,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.segmentText,
-                    nature === value && styles.segmentTextSelected,
-                  ]}
-                >
-                  {value}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
+        <NatureSelector label="Nature" value={nature} onChange={setNature} />
 
         <SelectField
           label="Category"
           value={category}
-          options={Object.values(ExpenseCategory)}
+          options={EXPENSE_CATEGORIES}
           onChange={setCategory}
         />
 
@@ -203,35 +184,8 @@ export default function ExpenseForm() {
 }
 
 const styles = StyleSheet.create({
-  segmentedControl: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
   fieldGroup: {
     gap: spacing.sm,
-  },
-  segment: {
-    backgroundColor: colors.card,
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
-    flexGrow: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 13,
-  },
-  segmentSelected: {
-    backgroundColor: colors.primarySoft,
-    borderColor: colors.primary,
-  },
-  segmentText: {
-    color: colors.muted,
-    fontSize: 13,
-    textAlign: "center",
-  },
-  segmentTextSelected: {
-    color: colors.primary,
-    fontWeight: "700",
   },
   amountField: {
     alignItems: "center",
@@ -257,7 +211,7 @@ const styles = StyleSheet.create({
   dateFieldValue: {
     color: colors.text,
     fontSize: 16,
-    marginTop: 14
+    marginTop: 14,
   },
   optional: {
     color: colors.muted,

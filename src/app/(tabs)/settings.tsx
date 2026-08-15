@@ -20,7 +20,6 @@ import {
   useDropboxAuthRequest,
 } from "@/sync/dropboxAuth";
 import { syncDropboxExpenses } from "@/sync/dropboxFiles";
-import { SQLiteExpenseRepository } from "@/repositories/SQLiteExpenseRepository";
 
 export default function Settings() {
   const syncSupported = Platform.OS !== "web";
@@ -30,6 +29,7 @@ export default function Settings() {
   const [busy, setBusy] = useState(syncSupported);
   const [syncMessage, setSyncMessage] = useState("");
   const handledCode = useRef<string | null>(null);
+  const appKeyConfigured = hasDropboxAppKey();
 
   useEffect(() => {
     if (!syncSupported) return;
@@ -110,7 +110,7 @@ export default function Settings() {
     setBusy(true);
     setSyncMessage("");
     try {
-      await syncDropboxExpenses(new SQLiteExpenseRepository());
+      await syncDropboxExpenses();
       setSyncMessage("Synced");
     } catch (error) {
       if (error instanceof DropboxSessionError) {
@@ -124,7 +124,7 @@ export default function Settings() {
   }
 
   const connectDisabled =
-    !syncSupported || !request || busy || !hasDropboxAppKey();
+    !syncSupported || !request || busy || !appKeyConfigured;
   const connectLabel = busy
     ? "Working…"
     : connected
@@ -161,7 +161,7 @@ export default function Settings() {
             {syncMessage}
           </Text>
         )}
-        {!hasDropboxAppKey() && (
+        {!appKeyConfigured && (
           <Text style={styles.warning}>
             Add EXPO_PUBLIC_DROPBOX_APP_KEY to enable Dropbox.
           </Text>

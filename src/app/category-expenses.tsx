@@ -1,6 +1,12 @@
-import { Expense, ExpenseCategory, ExpenseNature } from "@/models/expense";
-import { ExpenseCursor } from "@/models/expenseSummary";
-import { useExpenses } from "@/contexts/ExpenseContext";
+import {
+  EXPENSE_CATEGORIES,
+  EXPENSE_NATURES,
+  Expense,
+  ExpenseCategory,
+  ExpenseCursor,
+  ExpenseNature,
+} from "@/models/expense";
+import { getCategoryPage } from "@/repositories/expenses";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -33,8 +39,8 @@ export default function CategoryExpensesScreen() {
     Number.isFinite(fromTime) &&
     Number.isFinite(toTime) &&
     fromTime <= toTime &&
-    Object.values(ExpenseNature).includes(nature as ExpenseNature) &&
-    Object.values(ExpenseCategory).includes(category as ExpenseCategory);
+    EXPENSE_NATURES.includes(nature as ExpenseNature) &&
+    EXPENSE_CATEGORIES.includes(category as ExpenseCategory);
   const [categoryExpenses, setCategoryExpenses] = useState<Expense[]>([]);
   const [categoryTotal, setCategoryTotal] = useState(0);
   const [nextCursor, setNextCursor] = useState<ExpenseCursor>();
@@ -44,8 +50,6 @@ export default function CategoryExpensesScreen() {
   const [reload, setReload] = useState(0);
   const generation = useRef(0);
   const loadingMoreRef = useRef(false);
-
-  const { getCategoryPage } = useExpenses();
 
   useEffect(() => {
     const requestGeneration = ++generation.current;
@@ -97,7 +101,6 @@ export default function CategoryExpensesScreen() {
   }, [
     category,
     fromTime,
-    getCategoryPage,
     nature,
     reload,
     toTime,
@@ -140,7 +143,6 @@ export default function CategoryExpensesScreen() {
   }, [
     category,
     fromTime,
-    getCategoryPage,
     loading,
     nature,
     nextCursor,
@@ -181,9 +183,9 @@ export default function CategoryExpensesScreen() {
               <Text style={commonStyles.subtitle}>{dateRangeLabel}</Text>
             </View>
 
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Total Expense</Text>
-              <Text style={styles.summaryValue}>
+            <View style={[commonStyles.summaryCard, styles.summaryCard]}>
+              <Text style={commonStyles.summaryLabel}>Total Expense</Text>
+              <Text style={commonStyles.summaryValue}>
                 {formatCurrency(categoryTotal)}
               </Text>
             </View>
@@ -244,21 +246,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   summaryCard: {
-    backgroundColor: colors.primary,
-    borderRadius: 16,
-    padding: spacing.lg,
     marginVertical: 20,
-  },
-  summaryLabel: {
-    color: "#DDE2FF",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  summaryValue: {
-    color: "#FFFFFF",
-    fontSize: 32,
-    fontWeight: "800",
-    marginTop: 6,
   },
   listTitle: {
     color: colors.text,

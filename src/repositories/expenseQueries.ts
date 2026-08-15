@@ -19,6 +19,8 @@ export function categoryPageQuery(
   limit: number,
   cursor?: { date: string; id: string }
 ): CategoryPageQuery {
+  const filters = [start, end, nature, category];
+
   if (!cursor) {
     return {
       sql: `
@@ -36,17 +38,7 @@ export function categoryPageQuery(
         ORDER BY e.date DESC, e.id DESC
         LIMIT ?
       `,
-      params: [
-        start,
-        end,
-        nature,
-        category,
-        start,
-        end,
-        nature,
-        category,
-        limit,
-      ],
+      params: [...filters, ...filters, limit],
     };
   }
 
@@ -60,15 +52,6 @@ export function categoryPageQuery(
       ORDER BY date DESC, id DESC
       LIMIT ?
     `,
-    params: [
-      start,
-      end,
-      nature,
-      category,
-      cursor.date,
-      cursor.date,
-      cursor.id,
-      limit,
-    ],
+    params: [...filters, cursor.date, cursor.date, cursor.id, limit],
   };
 }

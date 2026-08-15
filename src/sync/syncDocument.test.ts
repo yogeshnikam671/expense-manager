@@ -30,6 +30,9 @@ test("sync document validates, round-trips, and merges deterministically", () =>
   const invalid = JSON.parse(serializeSyncDocument([original]));
   invalid.records[0].amount = "10";
   assert.throws(() => parseSyncDocument(JSON.stringify(invalid)), /Invalid sync record/);
+  invalid.records[0].amount = 10;
+  invalid.records[0].labels = ["bad label"];
+  assert.throws(() => parseSyncDocument(JSON.stringify(invalid)), /Invalid sync record/);
 
   const old = expense("same", "2026-01-01T00:00:00.000Z");
   const current = { ...expense("same", "2026-01-02T00:00:00.000Z"), amount: 20 };

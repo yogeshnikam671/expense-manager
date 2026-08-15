@@ -1,7 +1,19 @@
-import { DROPBOX_SYNC_FILE, dropboxResponseError, getDropboxAccount, getValidDropboxAccessToken } from "@/sync/dropboxAuth";
-import { ExpenseRepository } from "@/repositories/ExpenseRepository";
-import { mergeExpenses, parseSyncDocument, serializeSyncDocument } from "@/sync/syncDocument";
+import {
+  applySyncedExpenses,
+  getAllExpenses,
+} from "@/repositories/expenses";
 import { getSyncMetadata, setSyncMetadata } from "@/storage/database";
+import {
+  DROPBOX_SYNC_FILE,
+  dropboxResponseError,
+  getDropboxAccount,
+  getValidDropboxAccessToken,
+} from "@/sync/dropboxAuth";
+import {
+  mergeExpenses,
+  parseSyncDocument,
+  serializeSyncDocument,
+} from "@/sync/syncDocument";
 
 const CONTENT_API = "https://content.dropboxapi.com/2";
 const ACCOUNT_ID_KEY = "dropbox.accountId";
@@ -68,7 +80,7 @@ export async function downloadSyncDocument(accessToken: string): Promise<{ docum
   return { document, rev: metadata.rev };
 }
 
-export async function syncDropboxExpenses(repository: ExpenseRepository): Promise<void> {
+export async function syncDropboxExpenses(): Promise<void> {
   const accessToken = await getValidDropboxAccessToken();
   const { accountId } = await getDropboxAccount(accessToken);
   const linkedAccountId = getSyncMetadata(ACCOUNT_ID_KEY);
@@ -78,13 +90,13 @@ export async function syncDropboxExpenses(repository: ExpenseRepository): Promis
   if (!linkedAccountId) setSyncMetadata(ACCOUNT_ID_KEY, accountId);
 
   for (let attempt = 1; attempt <= MAX_SYNC_ATTEMPTS; attempt++) {
-    const local = await repository.getAll();
+    const local = await getAllExpenses();
     const cloud = await downloadSyncDocument(accessToken);
     const merged = mergeExpenses(local, cloud ? parseSyncDocument(cloud.document) : []);
 
     try {
       await uploadSyncDocument(accessToken, serializeSyncDocument(merged), cloud?.rev);
-      await repository.applySync(merged);
+      await applySyncedExpenses(merged);
       return;
     } catch (error) {
       if (!(error instanceof DropboxConflictError) || attempt === MAX_SYNC_ATTEMPTS) throw error;

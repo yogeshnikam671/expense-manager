@@ -1,54 +1,127 @@
-# Welcome to your Expo app 👋
+# Expense Manager
 
-## Dropbox development setup
+Expo app for recording expenses, reviewing category totals, and manually syncing data through Dropbox.
 
-Create a Dropbox app with **App Folder** access, enable `account_info.read`, `files.content.read`, and `files.content.write`, and add OAuth redirect URI `expensemanager://oauth`. Copy `.env.example` to `.env` and set `EXPO_PUBLIC_DROPBOX_APP_KEY` to its app key. Sync file lives at `/Apps/<app-folder>/expenses.json`; app-folder name comes from Dropbox app config. Use a development build for OAuth testing; Expo Go cannot handle this custom redirect reliably.
+## Run
 
-After connecting, Settings → Sync now merges local data with that fixed file. No folder picker or Full Dropbox access.
+```bash
+npm install
+npm start
+```
 
-Conflicts use each device's `updatedAt`; keep device clocks automatic. Add logical record revisions before supporting cross-device edits or deletes.
+Checks:
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+```bash
+npm test
+npm run typecheck
+```
 
-## Get started
+## Test Dropbox sync on a Mac iOS Simulator
 
-1. Install dependencies
+Expo Go will not work for this test because Dropbox must return to the app through its custom URL scheme. Use a locally compiled iOS build.
+
+### 1. Prepare the Mac
+
+1. Install Xcode from the Mac App Store.
+2. Open Xcode once and accept its license/setup prompts.
+3. In Xcode, open **Settings → Components** and install an iOS Simulator runtime if none is installed.
+4. In Terminal, change to this repository.
+5. Install dependencies:
 
    ```bash
    npm install
    ```
 
-2. Start the app
+### 2. Create the Dropbox app
+
+1. Open the [Dropbox App Console](https://www.dropbox.com/developers/apps).
+2. Select **Create app**.
+3. Choose **Scoped access**.
+4. Choose **App folder** access.
+5. Enter a unique app name, then create the app.
+6. Open the app's **Permissions** tab.
+7. Enable these scopes:
+
+   - `account_info.read`
+   - `files.content.read`
+   - `files.content.write`
+8. Click **Submit** at the bottom of the Permissions page.
+9. Open the app's **Settings** tab.
+10. Under **OAuth 2 → Redirect URIs**, add this exact URI:
+
+    ```text
+    expensemanager://oauth
+    ```
+
+11. On the same page, copy the **App key**. Do not use the App secret.
+
+### 3. Configure the app key
+
+1. Create the local environment file:
 
    ```bash
-   npx expo start
+   cp .env.example .env
    ```
 
-In the output, you'll find options to open the app in a
+2. Open `.env` and replace its value with the copied Dropbox App key:
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+   ```env
+   EXPO_PUBLIC_DROPBOX_APP_KEY=your-real-app-key
+   ```
 
-You can start developing by editing files inside **src/app**. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+3. Save the file. `.env` is ignored by Git.
 
-### Other setup steps
+### 4. Build and launch the iOS app
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Run:
 
-## Learn more
+```bash
+npx expo run:ios
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Expo will create the native iOS project, start Metro, boot an iOS Simulator, install the app, and launch it. The first build can take several minutes.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### 5. Test upload
 
-## Join the community
+1. Open **Add** and save an expense.
+2. Open **Settings**.
+3. Tap **Connect Dropbox**.
+4. Sign in with your Dropbox account and approve access.
+5. After returning to the app, tap **Sync now**.
+6. Confirm the app shows **Synced**.
+7. Open Dropbox in a browser and find:
 
-Join our community of developers creating universal apps.
+   ```text
+   Apps/<your Dropbox app name>/expenses.json
+   ```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+The expense should exist in that file.
+
+### 6. Test download and restore
+
+1. Keep the synced Dropbox file from the previous test.
+2. Remove the app and its local database from the running Simulator:
+
+   ```bash
+   xcrun simctl uninstall booted com.yogeshanandanikam.expensemanager
+   ```
+
+3. Reinstall and launch it:
+
+   ```bash
+   npx expo run:ios
+   ```
+
+4. Open **Settings**, connect the same Dropbox account, then tap **Sync now**.
+5. Open **History**. The earlier expense should be restored.
+
+### Troubleshooting
+
+- **Connect Dropbox is disabled:** verify `.env` contains the real key, stop Metro, then rerun `npx expo run:ios`.
+- **Dropbox rejects the redirect:** verify `expensemanager://oauth` is entered exactly in Dropbox App Console.
+- **Browser does not return to the app:** verify you launched the compiled app, not Expo Go.
+- **Native build is stale:** stop Metro and rerun `npx expo run:ios`.
+
+Sync merges data into the user's own Dropbox App Folder. Conflicts use each device's `updatedAt`, so keep device clocks automatic.
+
+Routes live in `src/app`; shared UI, storage, repositories, and sync code live under `src`.
