@@ -1,5 +1,13 @@
 # Welcome to your Expo app 👋
 
+## Dropbox development setup
+
+Create a Dropbox app with **App Folder** access, enable `account_info.read`, `files.content.read`, and `files.content.write`, and add OAuth redirect URI `expensemanager://oauth`. Copy `.env.example` to `.env` and set `EXPO_PUBLIC_DROPBOX_APP_KEY` to its app key. Sync file lives at `/Apps/<app-folder>/expenses.json`; app-folder name comes from Dropbox app config. Use a development build for OAuth testing; Expo Go cannot handle this custom redirect reliably.
+
+After connecting, Settings → Sync now merges local data with that fixed file. No folder picker or Full Dropbox access.
+
+Conflicts use each device's `updatedAt`; keep device clocks automatic. Add logical record revisions before supporting cross-device edits or deletes.
+
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
 ## Get started
@@ -23,17 +31,7 @@ In the output, you'll find options to open the app in a
 - [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
 - [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+You can start developing by editing files inside **src/app**. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
 ### Other setup steps
 

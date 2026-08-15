@@ -1,44 +1,38 @@
-import { Expense } from "@/models/expense";
+import { Expense, ExpenseCategory, ExpenseNature } from "@/models/expense";
+import {
+  ExpenseCursor,
+  ExpenseHistorySummary,
+  ExpensePage,
+} from "@/models/expenseSummary";
 import { ExpenseRepository } from "@/repositories/ExpenseRepository";
 import { SQLiteExpenseRepository } from "@/repositories/SQLiteExpenseRepository";
-import {
-  createContext,
-  ReactNode,
-  useContext,
-  useState,
-} from "react";
+import { createContext, ReactNode, useContext } from "react";
 
 type ExpenseContextValue = {
-  expenses: Expense[];
   saveExpense: (expense: Expense) => Promise<void>;
-  loadExpensesBetween: (from: Date, to: Date) => Promise<Expense[]>;
+  getHistorySummary: (from: Date, to: Date) => Promise<ExpenseHistorySummary>;
+  getCategoryPage: (
+    from: Date,
+    to: Date,
+    nature: ExpenseNature,
+    category: ExpenseCategory,
+    cursor?: ExpenseCursor
+  ) => Promise<ExpensePage>;
 };
 
 const ExpenseContext = createContext<ExpenseContextValue | null>(null);
 
 const repository: ExpenseRepository = new SQLiteExpenseRepository();
+const contextValue: ExpenseContextValue = {
+  saveExpense: (expense) => repository.save(expense),
+  getHistorySummary: (from, to) => repository.getHistorySummary(from, to),
+  getCategoryPage: (from, to, nature, category, cursor) =>
+    repository.getCategoryPage(from, to, nature, category, cursor),
+};
 
 export function ExpenseProvider({ children }: { children: ReactNode }) {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-
-  async function saveExpense(expense: Expense) {
-    await repository.save(expense);
-  }
-
-  async function loadExpensesBetween(from: Date, to: Date) {
-    const result = await repository.getBetween(from, to);
-    setExpenses(result);
-    return result;
-  }
-
   return (
-    <ExpenseContext.Provider
-      value={{
-        expenses,
-        saveExpense,
-        loadExpensesBetween,
-      }}
-    >
+    <ExpenseContext.Provider value={contextValue}>
       {children}
     </ExpenseContext.Provider>
   );

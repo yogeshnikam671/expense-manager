@@ -1,6 +1,6 @@
 import { ExpenseNature } from "@/models/expense";
+import { ExpenseHistorySummary } from "@/models/expenseSummary";
 import { useExpenses } from "@/contexts/ExpenseContext";
-import { getCategoryBreakdown, getTotalSpend } from "@/utils/expenseAnalytics";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -26,6 +26,12 @@ function startOfMonth() {
   return new Date(now.getFullYear(), now.getMonth(), 1);
 }
 
+const EMPTY_SUMMARY: ExpenseHistorySummary = {
+  total: 0,
+  count: 0,
+  categories: [],
+};
+
 export default function HistoryScreen() {
   const [fromDate, setFromDate] = useState(startOfMonth());
   const [toDate, setToDate] = useState(new Date());
@@ -33,32 +39,42 @@ export default function HistoryScreen() {
   const [picker, setPicker] = useState<"from" | "to" | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [summary, setSummary] = useState(EMPTY_SUMMARY);
+  const [reload, setReload] = useState(0);
 
-  const { expenses, loadExpensesBetween } = useExpenses();
-
-  const loadExpenses = useCallback(async () => {
-    setLoading(true);
-    
-    try {
-      await loadExpensesBetween(fromDate, toDate);
-      setError("");
-    } catch {
-      setError("Could not load history. Try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, [fromDate, toDate]);
+  const { getHistorySummary } = useExpenses();
 
   useFocusEffect(
     useCallback(() => {
-      loadExpenses();
-    }, [loadExpenses])
+      let active = true;
+      setLoading(true);
+      setError("");
+      setSummary(EMPTY_SUMMARY);
+
+      getHistorySummary(fromDate, toDate)
+        .then((result) => {
+          if (active) setSummary(result);
+        })
+        .catch(() => {
+          if (active) setError("Could not load history. Try again.");
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+
+      return () => {
+        active = false;
+      };
+    }, [fromDate, toDate, getHistorySummary, reload])
   );
 
-  const expensesForSelectedNature = expenses.filter(
-    (expense) => expense.nature === selectedNature
+  const categoryBreakdown = summary.categories.filter(
+    (item) => item.nature === selectedNature
   );
-  const categoryBreakdown = getCategoryBreakdown(expensesForSelectedNature);
+  const selectedNatureCount = categoryBreakdown.reduce(
+    (count, item) => count + item.count,
+    0
+  );
 
   return (
     <ScrollView
@@ -92,10 +108,10 @@ export default function HistoryScreen() {
       <View style={styles.summaryCard}>
         <Text style={styles.summaryLabel}>Total spend</Text>
         <Text style={styles.summaryValue}>
-          {formatCurrency(getTotalSpend(expenses))}
+          {formatCurrency(summary.total)}
         </Text>
         <Text style={styles.summaryMeta}>
-          {expenses.length} {expenses.length === 1 ? "expense" : "expenses"}
+          {summary.count} {summary.count === 1 ? "expense" : "expenses"}
         </Text>
       </View>
 
@@ -125,15 +141,24 @@ export default function HistoryScreen() {
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Categories</Text>
         <Text style={styles.muted}>
-          {expensesForSelectedNature.length}{" "}
-          {expensesForSelectedNature.length === 1 ? "expense" : "expenses"}
+          {selectedNatureCount}{" "}
+          {selectedNatureCount === 1 ? "expense" : "expenses"}
         </Text>
       </View>
 
       {loading ? (
         <ActivityIndicator color={colors.primary} />
       ) : error ? (
-        <Text style={styles.error}>{error}</Text>
+        <View style={styles.errorBlock}>
+          <Text style={styles.error}>{error}</Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setReload((value) => value + 1)}
+            style={styles.retryButton}
+          >
+            <Text style={styles.retryText}>Try again</Text>
+          </Pressable>
+        </View>
       ) : categoryBreakdown.length === 0 ? (
         <View style={commonStyles.card}>
           <Text style={styles.emptyTitle}>No expenses found</Text>
@@ -151,7 +176,6 @@ export default function HistoryScreen() {
                   to: toDate.toISOString(),
                   nature: item.nature,
                   category: item.category,
-                  total: String(item.total),
                 },
               })
             }
@@ -298,5 +322,19 @@ const styles = StyleSheet.create({
   },
   error: {
     color: colors.danger,
+  },
+  errorBlock: {
+    alignItems: "flex-start",
+    gap: spacing.sm,
+  },
+  retryButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  retryText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
   },
 });

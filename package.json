@@ -3,18 +3,20 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
-    "@expo/ui": "~57.0.10",
+    "@expo/ui": "~57.0.11",
     "@react-native-community/datetimepicker": "9.1.0",
     "@react-native-picker/picker": "^2.11.4",
-    "expo": "~57.0.12",
+    "expo": "~57.0.13",
+    "expo-auth-session": "~57.0.6",
     "expo-constants": "~57.0.10",
     "expo-crypto": "~57.0.1",
     "expo-device": "~57.0.1",
     "expo-font": "~57.0.1",
     "expo-glass-effect": "~57.0.1",
-    "expo-image": "~57.0.2",
+    "expo-image": "~57.0.3",
     "expo-linking": "~57.0.5",
-    "expo-router": "~57.0.12",
+    "expo-router": "~57.0.13",
+    "expo-secure-store": "~57.0.1",
     "expo-splash-screen": "~57.0.6",
     "expo-sqlite": "~57.0.1",
     "expo-status-bar": "~57.0.1",
@@ -32,16 +34,18 @@
     "react-native-worklets": "0.10.1"
   },
   "devDependencies": {
+    "@types/node": "^26.2.0",
     "@types/react": "~19.2.2",
+    "tsx": "^4.23.12",
     "typescript": "~6.0.3"
   },
   "scripts": {
     "start": "expo start",
-    "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test": "node --import tsx --test src/sync/syncDocument.test.ts src/repositories/expenseQueries.test.ts"
   },
   "private": true
 }
