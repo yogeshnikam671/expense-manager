@@ -40,7 +40,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test src/sync/syncDocument.test.ts src/repositories/expenseQueries.test.ts"
+    "test": "node --import tsx --test src/sync/syncDocument.test.ts src/repositories/expenseQueries.test.ts src/routing/nativeIntent.test.ts"
   },
   "private": true
 }
