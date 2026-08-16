@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as Clipboard from "expo-clipboard";
 import {
+  ActivityIndicator,
   Alert,
   Platform,
   Pressable,
@@ -22,7 +23,13 @@ import {
   hasDropboxAppKey,
   useDropboxAuthRequest,
 } from "@/sync/dropboxAuth";
-import { syncDropboxExpenses } from "@/sync/dropboxFiles";
+import {
+  DropboxBucketsDeletedError,
+  formatSyncBucket,
+  MissingBucketResolution,
+  SyncProgress,
+  syncDropboxExpenses,
+} from "@/sync/dropboxFiles";
 import {
   getSyncRecoveryKey,
   importSyncRecoveryKey,
@@ -37,6 +44,7 @@ export default function Settings() {
   const [busy, setBusy] = useState(syncSupported);
   const [checkingConnection, setCheckingConnection] = useState(syncSupported);
   const [syncMessage, setSyncMessage] = useState("");
+  const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null);
   const [recoveryMessage, setRecoveryMessage] = useState("");
   const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
   const [restoringRecoveryKey, setRestoringRecoveryKey] = useState(false);
@@ -161,12 +169,16 @@ export default function Settings() {
     );
   }
 
-  async function syncNow() {
+  async function syncNow(missingBucketResolution?: MissingBucketResolution) {
     setBusy(true);
     setSyncMessage("");
+    setSyncProgress({ label: "Connecting to Dropbox" });
     setRecoveryMessage("");
     try {
-      const { recoveryKey } = await syncDropboxExpenses();
+      const { recoveryKey } = await syncDropboxExpenses(
+        setSyncProgress,
+        missingBucketResolution
+      );
       if (recoveryKey) {
         setHasRecoveryKey(true);
         setRecoveryCode(recoveryKey);
@@ -176,6 +188,26 @@ export default function Settings() {
         setSyncMessage("Synced");
       }
     } catch (error) {
+      if (!(error instanceof SyncEncryptionKeyError) && !hasRecoveryKey) {
+        const recoveryKey = await getSyncRecoveryKey().catch(() => null);
+        if (recoveryKey) {
+          setHasRecoveryKey(true);
+          setRecoveryCode(recoveryKey);
+          setRecoveryMessage("Recovery key created. Save it before retrying sync.");
+        }
+      }
+      if (error instanceof DropboxBucketsDeletedError) {
+        const months = error.buckets.map(formatSyncBucket).join(", ");
+        Alert.alert(
+          "Dropbox data deleted",
+          `Dropbox no longer contains ${months}. Restore Dropbox from local data, or delete those local expenses too?`,
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Restore Dropbox", onPress: () => void syncNow("restore") },
+            { text: "Delete local", style: "destructive", onPress: () => void syncNow("delete") },
+          ]
+        );
+      }
       if (error instanceof DropboxSessionError) {
         setConnected(false);
         setAccountName("");
@@ -185,8 +217,11 @@ export default function Settings() {
         setRecoveryCode("");
         setRestoringRecoveryKey(true);
       }
-      setSyncMessage(error instanceof Error ? error.message : "Sync failed");
+      if (!(error instanceof DropboxBucketsDeletedError)) {
+        setSyncMessage(error instanceof Error ? error.message : "Sync failed");
+      }
     } finally {
+      setSyncProgress(null);
       setBusy(false);
     }
   }
@@ -239,6 +274,9 @@ export default function Settings() {
     !syncSupported || !request || busy || !appKeyConfigured;
   const connectLabel = busy ? "Working…" : "Connect Dropbox";
   const recoveryKeyEmpty = !recoveryCode?.trim();
+  const syncPercent = syncProgress?.total
+    ? Math.min(100, Math.max(0, Math.round(((syncProgress.completed ?? 0) / syncProgress.total) * 100)))
+    : null;
 
   return (
     <SafeAreaView style={commonStyles.screen} edges={["top"]}>
@@ -266,17 +304,44 @@ export default function Settings() {
             <Pressable
               accessibilityRole="button"
               disabled={busy || restoringRecoveryKey}
-              onPress={syncNow}
+              onPress={() => void syncNow()}
               style={[styles.button, (busy || restoringRecoveryKey) && styles.disabled]}
             >
               <Text style={styles.buttonText}>
-                {busy ? "Working…" : "Sync now"}
+                {syncProgress ? "Syncing…" : busy ? "Working…" : "Sync now"}
               </Text>
             </Pressable>
             {!!syncMessage && (
               <Text accessibilityLiveRegion="polite" style={styles.message}>
                 {syncMessage}
               </Text>
+            )}
+            {!!syncProgress && (
+              <View accessibilityLiveRegion="polite" style={styles.progressCard}>
+                <View style={styles.progressHeader}>
+                  <ActivityIndicator accessible={false} color={colors.primary} size="small" />
+                  <View style={styles.progressCopy}>
+                    <Text style={styles.progressLabel}>{syncProgress.label}</Text>
+                    {!!syncProgress.detail && (
+                      <Text style={styles.help}>{syncProgress.detail}</Text>
+                    )}
+                  </View>
+                  {syncProgress.total !== undefined && (
+                    <Text style={styles.progressCount}>
+                      {syncProgress.completed ?? 0} of {syncProgress.total}
+                    </Text>
+                  )}
+                </View>
+                {syncPercent !== null && (
+                  <View
+                    accessibilityRole="progressbar"
+                    accessibilityValue={{ min: 0, max: 100, now: syncPercent }}
+                    style={styles.progressTrack}
+                  >
+                    <View style={[styles.progressFill, { width: `${syncPercent}%` }]} />
+                  </View>
+                )}
+              </View>
             )}
             {hasRecoveryKey && !restoringRecoveryKey && (
               <Pressable
@@ -415,6 +480,18 @@ const styles = StyleSheet.create({
   cloudCard: { gap: spacing.md },
   accountStatus: { color: colors.text },
   message: { color: colors.text },
+  progressCard: {
+    backgroundColor: colors.primarySoft,
+    borderRadius: 12,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  progressHeader: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
+  progressCopy: { flex: 1 },
+  progressLabel: { color: colors.text, fontWeight: "700" },
+  progressCount: { color: colors.primary, fontVariant: ["tabular-nums"], fontWeight: "700" },
+  progressTrack: { backgroundColor: colors.border, borderRadius: 4, height: 8, overflow: "hidden" },
+  progressFill: { backgroundColor: colors.primary, borderRadius: 4, height: "100%" },
   button: {
     alignItems: "center",
     backgroundColor: colors.primary,

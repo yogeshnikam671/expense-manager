@@ -50,6 +50,14 @@ function dateRange(from: Date, to: Date): [string, string] {
   return [start.toISOString(), end.toISOString()];
 }
 
+function expenseBucketRange(bucket: string): [string, string] {
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(bucket)) throw new Error("Invalid expense bucket");
+  const start = `${bucket}-01T00:00:00.000Z`;
+  const end = new Date(start);
+  end.setUTCMonth(end.getUTCMonth() + 1);
+  return [start, end.toISOString()];
+}
+
 function expenseFromRow(row: ExpenseRow): Expense {
   return {
     id: row.id,
@@ -108,17 +116,57 @@ export async function saveExpense(expense: Expense): Promise<void> {
 export async function applySyncedExpenses(expenses: Expense[]): Promise<void> {
   db.withTransactionSync(() => {
     for (const expense of expenses) {
-      upsertExpense({ ...expense, syncStatus: SyncStatus.Synced });
+      const current = db.getFirstSync<{ updatedAt: string }>(
+        "SELECT updatedAt FROM expenses WHERE id = ?",
+        expense.id
+      );
+      if (!current || current.updatedAt <= expense.updatedAt.toISOString()) {
+        upsertExpense({ ...expense, syncStatus: SyncStatus.Synced });
+      }
     }
   });
   expenseRevision += 1;
 }
 
-export async function getAllExpenses(): Promise<Expense[]> {
-  const rows = db.getAllSync<ExpenseRow>(
-    "SELECT * FROM expenses ORDER BY date DESC"
-  );
-  return rows.map(expenseFromRow);
+export async function getExpenseBuckets(pendingOnly = false): Promise<string[]> {
+  return db.getAllSync<{ bucket: string }>(
+    `SELECT DISTINCT substr(createdAt, 1, 7) AS bucket
+       FROM expenses
+      ${pendingOnly ? "WHERE syncStatus IN (?, ?, ?)" : ""}
+      ORDER BY bucket`,
+    ...(pendingOnly
+      ? [SyncStatus.PendingCreate, SyncStatus.PendingUpdate, SyncStatus.PendingDelete]
+      : [])
+  ).map(({ bucket }) => bucket);
+}
+
+export async function getExpensesInBucket(bucket: string): Promise<Expense[]> {
+  const [start, end] = expenseBucketRange(bucket);
+  return db.getAllSync<ExpenseRow>(
+    "SELECT * FROM expenses WHERE createdAt >= ? AND createdAt < ? ORDER BY date DESC, id",
+    start,
+    end
+  ).map(expenseFromRow);
+}
+
+export async function tombstoneExpenseBuckets(buckets: string[]): Promise<void> {
+  const now = new Date().toISOString();
+  db.withTransactionSync(() => {
+    for (const bucket of buckets) {
+      const [start, end] = expenseBucketRange(bucket);
+      db.runSync(
+        `UPDATE expenses
+            SET deletedAt = ?, updatedAt = ?, syncStatus = ?
+          WHERE createdAt >= ? AND createdAt < ? AND deletedAt IS NULL`,
+        now,
+        now,
+        SyncStatus.PendingDelete,
+        start,
+        end
+      );
+    }
+  });
+  expenseRevision += 1;
 }
 
 export async function getHistorySummary(

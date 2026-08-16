@@ -5,7 +5,9 @@ import test from "node:test";
 
 import { Expense, ExpenseCategory, ExpenseNature, SyncStatus } from "@/models/expense";
 import {
+  expenseSyncBucket,
   mergeExpenses,
+  parseBucketSyncDocument,
   parseEncryptedSyncDocument,
   parseSyncDocument,
   serializeEncryptedSyncDocument,
@@ -43,6 +45,11 @@ test("sync document validates, round-trips, and merges deterministically", () =>
   const old = expense("same", "2026-01-01T00:00:00.000Z");
   const current = { ...expense("same", "2026-01-02T00:00:00.000Z"), amount: 20 };
   assert.equal(mergeExpenses([old], [current])[0]?.amount, 20);
+  const deleted = {
+    ...expense("same", "2026-01-03T00:00:00.000Z"),
+    deletedAt: new Date("2026-01-03T00:00:00.000Z"),
+  };
+  assert.equal(mergeExpenses([current], [deleted])[0]?.deletedAt?.toISOString(), deleted.deletedAt.toISOString());
   assert.deepEqual(mergeExpenses([expense("b"), expense("a")], []).map(({ id }) => id), ["a", "b"]);
 });
 
@@ -62,5 +69,15 @@ test("encrypted sync envelope validates and round-trips", () => {
   assert.throws(
     () => parseEncryptedSyncDocument('{"encryptionVersion":1,"data":"***"}'),
     /Invalid encrypted sync document/
+  );
+});
+
+test("monthly sync buckets use immutable creation month and reject misplaced records", () => {
+  const january = expense("january");
+  assert.equal(expenseSyncBucket(january), "2026-01");
+  assert.equal(parseBucketSyncDocument("2026-01", serializeSyncDocument([january]))[0]?.id, "january");
+  assert.throws(
+    () => parseBucketSyncDocument("2026-02", serializeSyncDocument([january])),
+    /contains misplaced records/
   );
 });

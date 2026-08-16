@@ -139,6 +139,18 @@ export function parseSyncDocument(input: string): Expense[] {
   });
 }
 
+export function expenseSyncBucket(expense: Pick<Expense, "createdAt">): string {
+  return expense.createdAt.toISOString().slice(0, 7);
+}
+
+export function parseBucketSyncDocument(bucket: string, input: string): Expense[] {
+  const expenses = parseSyncDocument(input);
+  if (expenses.some((expense) => expenseSyncBucket(expense) !== bucket)) {
+    throw new Error(`Dropbox bucket ${bucket} contains misplaced records`);
+  }
+  return expenses;
+}
+
 function recordKey(expense: Expense): string {
   return JSON.stringify(cloudExpenseFrom(expense));
 }

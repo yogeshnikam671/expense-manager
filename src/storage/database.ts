@@ -50,6 +50,14 @@ export function initializeDatabase() {
       PRAGMA user_version = 3;
     `);
   }
+
+  if (currentVersion < 4) {
+    db.execSync(`
+      CREATE INDEX IF NOT EXISTS idx_expenses_sync_status_created_at
+        ON expenses(syncStatus, createdAt);
+      PRAGMA user_version = 4;
+    `);
+  }
 }
 
 export function getSyncMetadata(key: string): string | null {

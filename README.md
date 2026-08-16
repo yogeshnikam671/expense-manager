@@ -127,7 +127,7 @@ Expo will create the native iOS project, start Metro, boot an iOS Simulator, ins
 
 ### 5. Test encrypted upload
 
-For a fresh first-sync test, delete `Apps/<your Dropbox app name>/expenses.enc` if it exists and contains only disposable test data. An old `expenses.json` file is ignored and does not need to be deleted.
+For a fresh first-sync test, delete `expenses-v2-key.enc` and any `expenses-v2-YYYY-MM.enc` files containing only disposable test data. Old `expenses.enc` and `expenses.json` files are ignored.
 
 1. Open **Add** and save an expense.
 2. Open **Settings**.
@@ -139,7 +139,7 @@ For a fresh first-sync test, delete `Apps/<your Dropbox app name>/expenses.enc` 
 8. Open Dropbox in a browser and find:
 
    ```text
-   Apps/<your Dropbox app name>/expenses.enc
+   Apps/<your Dropbox app name>/expenses-v2-YYYY-MM.enc
    ```
 
 9. Open or download the file. It should contain an encryption version and ciphertext, not readable expense data.
@@ -148,7 +148,7 @@ For a fresh first-sync test, delete `Apps/<your Dropbox app name>/expenses.enc` 
 
 Use a second, unused Simulator so it has neither the local database nor the recovery key. Uninstalling the app alone is insufficient because the iOS Keychain can retain SecureStore values.
 
-1. Keep `expenses.enc` and the recovery key from the previous test.
+1. Keep the monthly `expenses-v2-YYYY-MM.enc` file and recovery key from the previous test.
 2. Run the app on another Simulator:
 
    ```bash
@@ -171,8 +171,8 @@ If no unused Simulator is available, erase one through **Simulator â†’ Device â†
 - **Browser does not return to the app:** verify you launched the compiled app, not Expo Go.
 - **Native build is stale:** stop Metro and rerun `npx expo run:ios`.
 - **Recovery key is not requested:** use a fresh Simulator; the current Simulator still has the key in its Keychain.
-- **Could not decrypt Dropbox data:** restore the exact recovery key created with that `expenses.enc` file.
+- **Could not decrypt Dropbox data:** restore the exact recovery key created with those monthly sync files.
 
-Sync merges data into the user's own Dropbox App Folder. Conflicts use each device's `updatedAt`, so keep device clocks automatic.
+Sync stores one encrypted file per creation month in the user's Dropbox App Folder. Dropbox cursors transfer only changed months. Conflicts use each device's `updatedAt`, so keep device clocks automatic.
 
 Routes live in `src/app`; shared UI, storage, repositories, and sync code live under `src`.

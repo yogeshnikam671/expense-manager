@@ -9,7 +9,7 @@ const REFRESH_TOKEN_KEY = "dropbox.oauth.refreshToken";
 const EXPIRES_AT_KEY = "dropbox.oauth.expiresAt";
 const LEGACY_TOKEN_KEY = "dropbox.oauth.tokens";
 const DROPBOX_APP_KEY = process.env.EXPO_PUBLIC_DROPBOX_APP_KEY;
-export const DROPBOX_SYNC_FILE = "/expenses.enc";
+const REQUEST_TIMEOUT_MS = 30_000;
 const redirectUri = AuthSession.makeRedirectUri({ scheme: "expensemanager", path: "oauth" });
 const discovery: AuthSession.DiscoveryDocument = {
   authorizationEndpoint: "https://www.dropbox.com/oauth2/authorize",
@@ -18,6 +18,36 @@ const discovery: AuthSession.DiscoveryDocument = {
 
 export type DropboxTokens = { accessToken: string; refreshToken?: string; expiresAt?: number };
 export class DropboxSessionError extends Error {}
+
+async function withDropboxTimeout<T>(request: Promise<T>): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      request,
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error("Dropbox request timed out. Try again.")),
+          REQUEST_TIMEOUT_MS
+        );
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
+export async function dropboxFetch(url: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error("Dropbox request timed out. Try again.");
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 export async function clearDropboxTokens(): Promise<void> {
   await Promise.all([
@@ -104,12 +134,12 @@ async function storeTokens(
 
 export async function connectDropbox(code: string, codeVerifier: string): Promise<DropboxTokens> {
   try {
-    const response = await AuthSession.exchangeCodeAsync({
+    const response = await withDropboxTimeout(AuthSession.exchangeCodeAsync({
       clientId: getDropboxAppKey(),
       code,
       redirectUri,
       extraParams: { code_verifier: codeVerifier },
-    }, discovery);
+    }, discovery));
     return await storeTokens(response);
   } catch (error) {
     throw new Error(`Dropbox authorization failed: ${error instanceof Error ? error.message : "Unknown error"}`);
@@ -124,10 +154,10 @@ export async function getValidDropboxAccessToken(): Promise<string> {
   }
 
   try {
-    const response = await AuthSession.refreshAsync({
+    const response = await withDropboxTimeout(AuthSession.refreshAsync({
       clientId: getDropboxAppKey(),
       refreshToken: tokens.refreshToken,
-    }, discovery);
+    }, discovery));
     return (await storeTokens(response, tokens.refreshToken)).accessToken;
   } catch (error) {
     if (
@@ -142,7 +172,7 @@ export async function getValidDropboxAccessToken(): Promise<string> {
 }
 
 export async function getDropboxAccount(accessToken: string): Promise<{ accountId: string; displayName: string }> {
-  const response = await fetch("https://api.dropboxapi.com/2/users/get_current_account", {
+  const response = await dropboxFetch("https://api.dropboxapi.com/2/users/get_current_account", {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
     body: "null",
@@ -162,7 +192,7 @@ export async function disconnectDropbox(): Promise<boolean> {
     const tokens = await getDropboxTokens();
     if (tokens) {
       const accessToken = await getValidDropboxAccessToken();
-      const response = await fetch("https://api.dropboxapi.com/2/auth/token/revoke", {
+      const response = await dropboxFetch("https://api.dropboxapi.com/2/auth/token/revoke", {
         method: "POST",
         headers: { Authorization: `Bearer ${accessToken}` },
       });
