@@ -9,7 +9,7 @@ const REFRESH_TOKEN_KEY = "dropbox.oauth.refreshToken";
 const EXPIRES_AT_KEY = "dropbox.oauth.expiresAt";
 const LEGACY_TOKEN_KEY = "dropbox.oauth.tokens";
 const DROPBOX_APP_KEY = process.env.EXPO_PUBLIC_DROPBOX_APP_KEY;
-export const DROPBOX_SYNC_FILE = "/expenses.json";
+export const DROPBOX_SYNC_FILE = "/expenses.enc";
 const redirectUri = AuthSession.makeRedirectUri({ scheme: "expensemanager", path: "oauth" });
 const discovery: AuthSession.DiscoveryDocument = {
   authorizationEndpoint: "https://www.dropbox.com/oauth2/authorize",
@@ -156,9 +156,10 @@ export async function getDropboxAccount(accessToken: string): Promise<{ accountI
   };
 }
 
-export async function disconnectDropbox(): Promise<void> {
-  const tokens = await getDropboxTokens();
+export async function disconnectDropbox(): Promise<boolean> {
+  let accessRevoked = true;
   try {
+    const tokens = await getDropboxTokens();
     if (tokens) {
       const accessToken = await getValidDropboxAccessToken();
       const response = await fetch("https://api.dropboxapi.com/2/auth/token/revoke", {
@@ -167,9 +168,12 @@ export async function disconnectDropbox(): Promise<void> {
       });
       if (!response.ok) throw await dropboxResponseError(response, "Could not revoke Dropbox access");
     }
+  } catch {
+    accessRevoked = false;
   } finally {
     await clearDropboxTokens();
   }
+  return accessRevoked;
 }
 
 export function useDropboxAuthRequest() {

@@ -14,6 +14,12 @@ import {
   parseSyncDocument,
   serializeSyncDocument,
 } from "@/sync/syncDocument";
+import {
+  createSyncEncryptionKey,
+  decryptSyncDocument,
+  encryptSyncDocument,
+  getSyncRecoveryKey,
+} from "@/sync/syncEncryption";
 
 const CONTENT_API = "https://content.dropboxapi.com/2";
 const ACCOUNT_ID_KEY = "dropbox.accountId";
@@ -80,7 +86,7 @@ export async function downloadSyncDocument(accessToken: string): Promise<{ docum
   return { document, rev: metadata.rev };
 }
 
-export async function syncDropboxExpenses(): Promise<void> {
+export async function syncDropboxExpenses(): Promise<{ recoveryKey?: string }> {
   const accessToken = await getValidDropboxAccessToken();
   const { accountId } = await getDropboxAccount(accessToken);
   const linkedAccountId = getSyncMetadata(ACCOUNT_ID_KEY);
@@ -89,17 +95,27 @@ export async function syncDropboxExpenses(): Promise<void> {
   }
   if (!linkedAccountId) setSyncMetadata(ACCOUNT_ID_KEY, accountId);
 
+  let recoveryKey: string | undefined;
   for (let attempt = 1; attempt <= MAX_SYNC_ATTEMPTS; attempt++) {
     const local = await getAllExpenses();
     const cloud = await downloadSyncDocument(accessToken);
-    const merged = mergeExpenses(local, cloud ? parseSyncDocument(cloud.document) : []);
+    if (!cloud) recoveryKey ??= await getSyncRecoveryKey() ?? await createSyncEncryptionKey();
+    const merged = mergeExpenses(
+      local,
+      cloud ? parseSyncDocument(await decryptSyncDocument(cloud.document)) : []
+    );
 
     try {
-      await uploadSyncDocument(accessToken, serializeSyncDocument(merged), cloud?.rev);
+      await uploadSyncDocument(
+        accessToken,
+        await encryptSyncDocument(serializeSyncDocument(merged)),
+        cloud?.rev
+      );
       await applySyncedExpenses(merged);
-      return;
+      return { recoveryKey };
     } catch (error) {
       if (!(error instanceof DropboxConflictError) || attempt === MAX_SYNC_ATTEMPTS) throw error;
     }
   }
+  throw new Error("Dropbox sync failed");
 }

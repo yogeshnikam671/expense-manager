@@ -9,6 +9,7 @@ import {
 import { isExpenseLabel } from "@/utils/expenseLabels";
 
 export const CURRENT_SYNC_SCHEMA = 1;
+export const CURRENT_ENCRYPTION_VERSION = 1;
 
 export type CloudExpense = Omit<Expense, "date" | "createdAt" | "updatedAt" | "deletedAt" | "syncStatus" | "description"> & {
   date: string;
@@ -22,6 +23,33 @@ export type SyncDocument = {
   schemaVersion: typeof CURRENT_SYNC_SCHEMA;
   records: CloudExpense[];
 };
+
+type EncryptedSyncDocument = {
+  encryptionVersion: typeof CURRENT_ENCRYPTION_VERSION;
+  data: string;
+};
+
+export function serializeEncryptedSyncDocument(data: string): string {
+  return JSON.stringify({
+    encryptionVersion: CURRENT_ENCRYPTION_VERSION,
+    data,
+  } satisfies EncryptedSyncDocument);
+}
+
+export function parseEncryptedSyncDocument(input: string): string {
+  const document: unknown = JSON.parse(input);
+  if (!document || typeof document !== "object" || Array.isArray(document)) {
+    throw new Error("Invalid encrypted sync document");
+  }
+  const envelope = document as Record<string, unknown>;
+  if (envelope.encryptionVersion !== CURRENT_ENCRYPTION_VERSION) {
+    throw new Error("Unsupported encrypted sync document version");
+  }
+  if (typeof envelope.data !== "string" || envelope.data.length === 0) {
+    throw new Error("Invalid encrypted sync document");
+  }
+  return envelope.data;
+}
 
 function cloudExpenseFrom(expense: Expense): CloudExpense {
   return {

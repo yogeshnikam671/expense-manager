@@ -1,6 +1,6 @@
 # Expense Manager
 
-Expo app for recording expenses, reviewing category totals, and manually syncing data through Dropbox.
+Expo app for recording expenses, reviewing category totals, and manually syncing encrypted data through Dropbox.
 
 ## Run
 
@@ -81,39 +81,44 @@ npx expo run:ios
 
 Expo will create the native iOS project, start Metro, boot an iOS Simulator, install the app, and launch it. The first build can take several minutes.
 
-### 5. Test upload
+### 5. Test encrypted upload
+
+For a fresh first-sync test, delete `Apps/<your Dropbox app name>/expenses.enc` if it exists and contains only disposable test data. An old `expenses.json` file is ignored and does not need to be deleted.
 
 1. Open **Add** and save an expense.
 2. Open **Settings**.
 3. Tap **Connect Dropbox**.
 4. Sign in with your Dropbox account and approve access.
 5. After returning to the app, tap **Sync now**.
-6. Confirm the app shows **Synced**.
-7. Open Dropbox in a browser and find:
+6. Confirm the app shows **Synced. Save recovery key below.**
+7. Copy the recovery key and keep it temporarily for the restore test. Anyone with this key can decrypt the backup.
+8. Open Dropbox in a browser and find:
 
    ```text
-   Apps/<your Dropbox app name>/expenses.json
+   Apps/<your Dropbox app name>/expenses.enc
    ```
 
-The expense should exist in that file.
+9. Open or download the file. It should contain an encryption version and ciphertext, not readable expense data.
 
 ### 6. Test download and restore
 
-1. Keep the synced Dropbox file from the previous test.
-2. Remove the app and its local database from the running Simulator:
+Use a second, unused Simulator so it has neither the local database nor the recovery key. Uninstalling the app alone is insufficient because the iOS Keychain can retain SecureStore values.
+
+1. Keep `expenses.enc` and the recovery key from the previous test.
+2. Run the app on another Simulator:
 
    ```bash
-   xcrun simctl uninstall booted com.yogeshanandanikam.expensemanager
+   npx expo run:ios --device
    ```
 
-3. Reinstall and launch it:
+3. Select a different Simulator when prompted.
+4. Open **Settings**, then connect the same Dropbox account.
+5. Tap **Sync now**. The app should request the recovery key without changing the Dropbox file.
+6. Paste the saved key and tap **Save recovery key**.
+7. Tap **Sync now** again.
+8. Open **History**. The earlier expense should be restored.
 
-   ```bash
-   npx expo run:ios
-   ```
-
-4. Open **Settings**, connect the same Dropbox account, then tap **Sync now**.
-5. Open **History**. The earlier expense should be restored.
+If no unused Simulator is available, erase one through **Simulator → Device → Erase All Content and Settings**, then reinstall. This deletes all data on that Simulator.
 
 ### Troubleshooting
 
@@ -121,6 +126,8 @@ The expense should exist in that file.
 - **Dropbox rejects the redirect:** verify `expensemanager://oauth` is entered exactly in Dropbox App Console.
 - **Browser does not return to the app:** verify you launched the compiled app, not Expo Go.
 - **Native build is stale:** stop Metro and rerun `npx expo run:ios`.
+- **Recovery key is not requested:** use a fresh Simulator; the current Simulator still has the key in its Keychain.
+- **Could not decrypt Dropbox data:** restore the exact recovery key created with that `expenses.enc` file.
 
 Sync merges data into the user's own Dropbox App Folder. Conflicts use each device's `updatedAt`, so keep device clocks automatic.
 

@@ -4,7 +4,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { Expense, ExpenseCategory, ExpenseNature, SyncStatus } from "@/models/expense";
-import { mergeExpenses, parseSyncDocument, serializeSyncDocument } from "./syncDocument";
+import {
+  mergeExpenses,
+  parseEncryptedSyncDocument,
+  parseSyncDocument,
+  serializeEncryptedSyncDocument,
+  serializeSyncDocument,
+} from "./syncDocument";
 
 function expense(id: string, updatedAt = "2026-01-01T00:00:00.000Z"): Expense {
   const timestamp = new Date(updatedAt);
@@ -38,4 +44,16 @@ test("sync document validates, round-trips, and merges deterministically", () =>
   const current = { ...expense("same", "2026-01-02T00:00:00.000Z"), amount: 20 };
   assert.equal(mergeExpenses([old], [current])[0]?.amount, 20);
   assert.deepEqual(mergeExpenses([expense("b"), expense("a")], []).map(({ id }) => id), ["a", "b"]);
+});
+
+test("encrypted sync envelope validates and round-trips", () => {
+  assert.equal(parseEncryptedSyncDocument(serializeEncryptedSyncDocument("ciphertext")), "ciphertext");
+  assert.throws(
+    () => parseEncryptedSyncDocument('{"encryptionVersion":2,"data":"ciphertext"}'),
+    /Unsupported encrypted sync document version/
+  );
+  assert.throws(
+    () => parseEncryptedSyncDocument('{"encryptionVersion":1,"data":""}'),
+    /Invalid encrypted sync document/
+  );
 });
