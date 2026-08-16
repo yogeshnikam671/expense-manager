@@ -23,10 +23,6 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="insights"
-        options={{ title: "Insights" }}
-      />
-      <Tabs.Screen
         name="settings"
         options={{ title: "Settings" }}
       />
