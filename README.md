@@ -16,6 +16,50 @@ npm test
 npm run typecheck
 ```
 
+## Publish an Android beta
+
+GitHub releases contain an installable APK. iOS publishing is intentionally not configured yet.
+
+### One-time setup
+
+1. Sign in to Expo and link this repository to an EAS project:
+
+   ```bash
+   npx eas-cli@latest login
+   npx eas-cli@latest init
+   ```
+
+   Commit the `expo.extra.eas.projectId` added to `app.json`.
+
+2. Add the Dropbox app key to the EAS `production` environment. This is a public client identifier, not the Dropbox app secret:
+
+   ```bash
+   npx eas-cli@latest env:set --environment production --name EXPO_PUBLIC_DROPBOX_APP_KEY --value your-real-app-key --visibility plaintext
+   ```
+
+3. Run the first build interactively so EAS can create and store the Android signing key:
+
+   ```bash
+   npx eas-cli@latest build --platform android --profile release
+   ```
+
+4. Create an Expo access token, then add it to this GitHub repository as an Actions secret named `EXPO_TOKEN`.
+
+### Release
+
+1. Set `expo.version` in `app.json`, for example `1.0.0`.
+2. Commit and push the change.
+3. Create and push the matching tag:
+
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+
+The workflow runs the checks, builds a signed APK, and attaches it to a GitHub prerelease. EAS increments Android's internal `versionCode` automatically.
+
+Android users can download the APK from GitHub Releases. Their phone may ask them to allow installs from the browser or file manager used to open it.
+
 ## Test Dropbox sync on a Mac iOS Simulator
 
 Expo Go will not work for this test because Dropbox must return to the app through its custom URL scheme. Use a locally compiled iOS build.
