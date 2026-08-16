@@ -36,7 +36,7 @@ export function serializeEncryptedSyncDocument(data: string): string {
   } satisfies EncryptedSyncDocument);
 }
 
-export function parseEncryptedSyncDocument(input: string): string {
+export function parseEncryptedSyncDocument(input: string): Uint8Array {
   const document: unknown = JSON.parse(input);
   if (!document || typeof document !== "object" || Array.isArray(document)) {
     throw new Error("Invalid encrypted sync document");
@@ -48,7 +48,11 @@ export function parseEncryptedSyncDocument(input: string): string {
   if (typeof envelope.data !== "string" || envelope.data.length === 0) {
     throw new Error("Invalid encrypted sync document");
   }
-  return envelope.data;
+  try {
+    return Uint8Array.from(atob(envelope.data), (character) => character.charCodeAt(0));
+  } catch {
+    throw new Error("Invalid encrypted sync document");
+  }
 }
 
 function cloudExpenseFrom(expense: Expense): CloudExpense {

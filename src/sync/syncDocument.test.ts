@@ -47,13 +47,20 @@ test("sync document validates, round-trips, and merges deterministically", () =>
 });
 
 test("encrypted sync envelope validates and round-trips", () => {
-  assert.equal(parseEncryptedSyncDocument(serializeEncryptedSyncDocument("ciphertext")), "ciphertext");
+  assert.deepEqual(
+    parseEncryptedSyncDocument(serializeEncryptedSyncDocument("AAEC/v8=")),
+    new Uint8Array([0, 1, 2, 254, 255])
+  );
   assert.throws(
     () => parseEncryptedSyncDocument('{"encryptionVersion":2,"data":"ciphertext"}'),
     /Unsupported encrypted sync document version/
   );
   assert.throws(
     () => parseEncryptedSyncDocument('{"encryptionVersion":1,"data":""}'),
+    /Invalid encrypted sync document/
+  );
+  assert.throws(
+    () => parseEncryptedSyncDocument('{"encryptionVersion":1,"data":"***"}'),
     /Invalid encrypted sync document/
   );
 });
